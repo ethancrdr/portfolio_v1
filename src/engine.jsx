@@ -6,13 +6,17 @@ import kanjiStrokes from './assets/kanji-lottie.json';
 
 /* ---------- Reveal — framer-motion whileInView ---------- */
 const REVEAL_VARIANTS = {
-  up:    { hidden: { opacity: 0, y: 28 },            visible: { opacity: 1, y: 0 } },
+  up:    { hidden: { opacity: 0, y: 20 },            visible: { opacity: 1, y: 0 } },
   fade:  { hidden: { opacity: 0 },                   visible: { opacity: 1 } },
-  right: { hidden: { opacity: 0, x: -24 },           visible: { opacity: 1, x: 0 } },
-  left:  { hidden: { opacity: 0, x: 24 },            visible: { opacity: 1, x: 0 } },
+  right: { hidden: { opacity: 0, x: -18 },           visible: { opacity: 1, x: 0 } },
+  left:  { hidden: { opacity: 0, x: 18 },            visible: { opacity: 1, x: 0 } },
   clip:  { hidden: { clipPath: "inset(0 0 100% 0)" }, visible: { clipPath: "inset(0 0 0% 0)" } },
-  scale: { hidden: { opacity: 0, scale: 0.88 },      visible: { opacity: 1, scale: 1 } },
+  scale: { hidden: { opacity: 0, scale: 0.94 },      visible: { opacity: 1, scale: 1 } },
 };
+
+// gentle ease-out / ease-in-out pair — keeps reveals calm, no initial whip
+const EASE_IN_GENTLE = [0.25, 0.46, 0.45, 0.94];
+const EASE_OUT_GENTLE = [0.45, 0.05, 0.55, 0.95];
 
 function Reveal({ children, variant = "up", delay = 0, as = "div", className = "", style = {}, whileHover }) {
   const Tag = motion[as] ?? motion.div;
@@ -30,10 +34,13 @@ function Reveal({ children, variant = "up", delay = 0, as = "div", className = "
   }
 
   const builtVariants = {
-    ...REVEAL_VARIANTS[variant],
+    hidden: {
+      ...REVEAL_VARIANTS[variant].hidden,
+      transition: { duration: dur * 0.55, ease: EASE_OUT_GENTLE },
+    },
     visible: {
       ...REVEAL_VARIANTS[variant].visible,
-      transition: { duration: dur, delay: delay / 1000, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: dur, delay: delay / 1000, ease: EASE_IN_GENTLE },
     },
   };
 
@@ -43,10 +50,10 @@ function Reveal({ children, variant = "up", delay = 0, as = "div", className = "
       style={style}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: "-8% 0px" }}
+      viewport={{ once: false, margin: "-8% 0px" }}
       variants={builtVariants}
       whileHover={whileHover}
-      transition={whileHover ? { type: "spring", stiffness: 400, damping: 22 } : undefined}
+      transition={whileHover ? { type: "spring", stiffness: 280, damping: 26 } : undefined}
     >
       {children}
     </Tag>
@@ -54,12 +61,12 @@ function Reveal({ children, variant = "up", delay = 0, as = "div", className = "
 }
 
 /* ---------- CharReveal — per-character brush-stroke entrance ---------- */
-function CharReveal({ text, delay = 0, stagger = 34 }) {
+function CharReveal({ text, delay = 0, stagger = 37 }) {
   const reduce = useReducedMotion();
   if (reduce) return <span aria-hidden="true">{text}</span>;
   let charIndex = 0;
   return (
-    <span aria-hidden="true">
+    <motion.span aria-hidden="true" initial="hidden" whileInView="visible" viewport={{ once: false }}>
       {text.split(" ").map((word, wi, words) => (
         <span key={wi}>
           <span style={{ display: "inline-block", whiteSpace: "nowrap" }}>
@@ -69,9 +76,17 @@ function CharReveal({ text, delay = 0, stagger = 34 }) {
               <motion.span
                 key={ci}
                 style={{ display: "inline-block" }}
-                initial={{ opacity: 0, y: "0.42em", filter: "blur(7px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{ duration: 0.72, delay: (delay + i * stagger) / 1000, ease: [0.16, 1, 0.3, 1] }}
+                variants={{
+                  // exit fades all chars together — no per-letter teardown
+                  hidden: {
+                    opacity: 0, y: "0.42em", filter: "blur(7px)",
+                    transition: { duration: 0.38, ease: "easeOut" },
+                  },
+                  visible: {
+                    opacity: 1, y: 0, filter: "blur(0px)",
+                    transition: { duration: 0.8, delay: (delay + i * stagger) / 1000, ease: EASE_IN_GENTLE },
+                  },
+                }}
               >
                 {c}
               </motion.span>
@@ -81,7 +96,7 @@ function CharReveal({ text, delay = 0, stagger = 34 }) {
           {wi < words.length - 1 ? " " : null}
         </span>
       ))}
-    </span>
+    </motion.span>
   );
 }
 
@@ -119,9 +134,9 @@ function SealStamp({ glyph = "恵", size = 64, className = "", style = {} }) {
       aria-hidden="true"
       initial={{ scale: 0, rotate: -20, opacity: 0 }}
       whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
-      viewport={{ once: true }}
-      whileHover={{ scale: 1.06, rotate: 3 }}
-      transition={{ type: "spring", stiffness: 260, damping: 18 }}
+      viewport={{ once: false }}
+      whileHover={{ scale: 1.06, rotate: 3, transition: { type: "spring", stiffness: 260, damping: 18 } }}
+      transition={{ type: "spring", stiffness: 230, damping: 26 }}
     >
       <span style={{ writingMode: "vertical-rl", textOrientation: "upright", padding: "0px 0px 1px", margin: "0px 0px 1px" }}>{glyph}</span>
     </motion.span>
@@ -147,6 +162,7 @@ function KanjiBrush({ label, data = kanjiStrokes, delay = 400, playOn = "mount",
       rendererSettings: { preserveAspectRatio: 'xMidYMid meet' },
     });
     animRef.current = anim;
+    anim.setSpeed(1.05);
     if (reduce) anim.goToAndStop(anim.totalFrames - 1, true);
     return () => { animRef.current = null; anim.destroy(); };
   }, [reduce, data]);
@@ -173,8 +189,8 @@ function BrushDivider({ vertical = false, length = 120, className = "", style = 
           stroke="var(--ink)" strokeWidth="2.4" fill="none" strokeLinecap="round"
           initial={{ pathLength: 0, opacity: 0 }}
           whileInView={{ pathLength: 1, opacity: 0.55 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.1, ease: "easeOut" }}
+          viewport={{ once: false }}
+          transition={{ duration: 1.25, ease: "easeInOut" }}
         />
       </svg>
     );
@@ -187,8 +203,8 @@ function BrushDivider({ vertical = false, length = 120, className = "", style = 
         stroke="var(--ink)" strokeWidth="2.4" fill="none" strokeLinecap="round"
         initial={{ pathLength: 0, opacity: 0 }}
         whileInView={{ pathLength: 1, opacity: 0.55 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1.1, ease: "easeOut" }}
+        viewport={{ once: false }}
+        transition={{ duration: 1.25, ease: "easeInOut" }}
       />
     </svg>
   );
@@ -198,7 +214,7 @@ function BrushDivider({ vertical = false, length = 120, className = "", style = 
 function ScrollProgress({ side = "left" }) {
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll();
-  const scaleY = useSpring(scrollYProgress, { stiffness: 140, damping: 28, mass: 0.4 });
+  const scaleY = useSpring(scrollYProgress, { stiffness: 100, damping: 26, mass: 0.5 });
   if (reduce) return null;
   return (
     <div className={"scroll-seam scroll-seam--" + side} aria-hidden="true">

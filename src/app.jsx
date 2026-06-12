@@ -3,7 +3,8 @@ import { useState as useState_, useEffect as useEffect_ } from 'react';
 import { useScroll, useMotionValueEvent } from 'framer-motion';
 import { PORTFOLIO } from './data';
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakColor, TweakSelect, TweakSlider } from './tweaks-panel';
-import { SumiInkCursorTrail, SealStamp, BrushDivider, ScrollProgress } from './engine';
+import { SealStamp, BrushDivider, ScrollProgress } from './engine';
+import { SuminagashiFluid } from './suminagashi';
 import { Hero, About, Stack, Work, Services, Contact, ProjectTimeline } from './sections';
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -70,20 +71,20 @@ function App() {
     r.setProperty("--brocade", theme.brocade);
     r.setProperty("--seal", tw.sealColor);
     r.setProperty("--font-display", `"${tw.displayFont}", serif`);
-    const dur = Math.round(900 / Math.max(0.4, tw.animSpeed));
+    const dur = Math.round(1000 / Math.max(0.4, tw.animSpeed));
     r.setProperty("--reveal-dur", dur + "ms");
     document.body.classList.toggle("is-dark", tw.mode === "dark");
   }, [theme, tw.sealColor, tw.displayFont, tw.animSpeed, tw.mode]);
 
   return (
     <div id="top" className="scroll-root">
-      <SumiInkCursorTrail inkColor={theme.ink} />
       <ScrollProgress side="left" />
       <TopBar P={P} t={t} lang={lang} setLang={setLang} />
 
       <div className="roller roller--top" aria-hidden="true"><i /><i /></div>
 
       <main className="paper">
+        <SuminagashiFluid dark={tw.mode === "dark"} paper={theme.washi} />
         <Hero P={P} t={t} variant={tw.heroVariant} />
         <Work t={t} />
         <About P={P} t={t} />
