@@ -1,6 +1,14 @@
 // sections.jsx — all page sections for the kakejiku portfolio
 import { useState as useS } from 'react';
-import { Reveal, VerticalText, SealStamp, BrushDivider } from './engine';
+import { Reveal, VerticalText, SealStamp, BrushDivider, CharReveal, ParallaxY, KanjiBrush } from './engine';
+import kickerAnimations from './assets/kanji-kickers.json';
+
+/* Kicker glyphs drawn stroke-by-stroke; falls back to plain text for words without stroke data */
+function KickerKanji({ word }) {
+  const data = kickerAnimations[word];
+  if (!data) return <VerticalText style={{ fontFamily: "var(--font-display)" }}>{word}</VerticalText>;
+  return <KanjiBrush data={data} label={word} playOn="visible" delay={150} className="kicker-lottie" />;
+}
 
 /* ---------- shared bits ---------- */
 function Placeholder({ label, ratio = "3 / 4", className = "", style = {} }) {
@@ -16,7 +24,7 @@ function SectionHead({ kicker, title, id }) {
   return (
     <div className="sec-head" id={id}>
       <Reveal variant="right" className="sec-head__kicker">
-        <VerticalText style={{ fontFamily: "var(--font-display)" }}>{kicker}</VerticalText>
+        <KickerKanji word={kicker} />
       </Reveal>
       <div className="sec-head__main">
         <Reveal variant="clip">
@@ -35,6 +43,17 @@ function Chip({ children }) {
 }
 
 /* ---------- HERO ---------- */
+function HeroCtas({ t, center = false }) {
+  return (
+    <Reveal variant="fade" delay={820}>
+      <div className={"hero__cta-row" + (center ? " hero__cta-row--center" : "")}>
+        <a className="btn-ink" href="#work">{t.cta.work}</a>
+        <a className="hero__cta-secondary" href="#contact">{t.cta.contact} <span aria-hidden="true">↓</span></a>
+      </div>
+    </Reveal>);
+
+}
+
 function Hero({ P, t, variant }) {
   if (variant === "B") {
     return (
@@ -44,20 +63,20 @@ function Hero({ P, t, variant }) {
           <Reveal variant="fade" delay={120}>
             <p className="hero__role">{t.role}</p>
           </Reveal>
-          <Reveal variant="up" delay={220}>
-            <h1 className="hero__name hero__name--center">{P.name}</h1>
-          </Reveal>
+          <h1 className="hero__name hero__name--center" aria-label={P.name}>
+            <CharReveal text={P.name} delay={220} />
+          </h1>
           <Reveal variant="clip" delay={420}>
             <BrushDivider length={220} style={{ margin: "1.1rem auto" }} />
           </Reveal>
           <Reveal variant="fade" delay={560}>
             <p className="hero__tagline">{t.tagline}</p>
           </Reveal>
-          <Reveal variant="fade" delay={760}>
+          <Reveal variant="fade" delay={700}>
             <SealStamp glyph={P.seal} size={62} className="hero-b__seal" />
           </Reveal>
+          <HeroCtas t={t} center />
         </div>
-        <ScrollCue label={t.scrollCue} />
       </header>);
 
   }
@@ -68,40 +87,34 @@ function Hero({ P, t, variant }) {
         <Reveal variant="fade" delay={100}>
           <p className="hero__role">{t.role}</p>
         </Reveal>
-        <Reveal variant="up" delay={200}>
-          <h1 className="hero__name">{P.name}</h1>
-        </Reveal>
+        <h1 className="hero__name" aria-label={P.name}>
+          <CharReveal text={P.name} delay={200} />
+        </h1>
         <Reveal variant="clip" delay={420}>
           <BrushDivider length={260} style={{ margin: "1.2rem 0" }} />
         </Reveal>
         <Reveal variant="fade" delay={520}>
           <p className="hero__tagline" style={{ fontFamily: "\"Zen Kaku Gothic New\"" }}>{t.tagline}</p>
         </Reveal>
+        <HeroCtas t={t} />
       </div>
 
       <div className="hero-a__column">
         <Reveal variant="right" delay={240} className="hero-a__kanji-wrap">
-          <VerticalText className="hero-a__kanji">{P.kanji}</VerticalText>
+          <ParallaxY from={0} to={70}>
+            <KanjiBrush label={P.kanji} delay={500} className="hero-a__kanji-lottie" />
+          </ParallaxY>
         </Reveal>
         <Reveal variant="fade" delay={620} className="hero-a__kata-wrap">
-          <VerticalText className="hero-a__kata">{P.katakana}</VerticalText>
+          <ParallaxY from={0} to={34}>
+            <VerticalText className="hero-a__kata">{P.katakana}</VerticalText>
+          </ParallaxY>
         </Reveal>
         <Reveal variant="scale" delay={780}>
           <SealStamp glyph={P.seal} size={58} className="hero-a__seal" />
         </Reveal>
       </div>
-
-      <ScrollCue label={t.scrollCue} />
     </header>);
-
-}
-
-function ScrollCue({ label }) {
-  return (
-    <div className="scroll-cue" aria-hidden="true">
-      <VerticalText className="scroll-cue__txt">{label}</VerticalText>
-      <span className="scroll-cue__line" />
-    </div>);
 
 }
 
@@ -129,7 +142,7 @@ function About({ P, t }) {
 
       <div className="about__exp">
         <Reveal variant="right" className="about__exp-kicker">
-          <VerticalText style={{ fontFamily: "var(--font-display)" }}>{t.about.expKicker}</VerticalText>
+          <KickerKanji word={t.about.expKicker} />
         </Reveal>
         <div className="about__exp-body">
           <Reveal variant="up"><h3 className="about__exp-title">{t.about.expTitle}</h3></Reveal>
@@ -175,8 +188,12 @@ function ProjectFeatured({ p, t }) {
   return (
     <Reveal variant="up" className="proj-featured">
       <div className="proj-featured__media">
-        <Placeholder label="[ SafeLock · captura ]" ratio="16 / 11" />
-        <VerticalText className="proj-featured__num" aria-hidden="true">{p.num}</VerticalText>
+        <Reveal variant="clip" delay={160}>
+          <Placeholder label="[ SafeLock · captura ]" ratio="16 / 11" />
+        </Reveal>
+        <ParallaxY from={14} to={-26} className="proj-featured__num-wrap">
+          <VerticalText className="proj-featured__num" aria-hidden="true">{p.num}</VerticalText>
+        </ParallaxY>
       </div>
       <div className="proj-featured__body">
         <span className="proj__flag">{t.work.featuredLabel}</span>

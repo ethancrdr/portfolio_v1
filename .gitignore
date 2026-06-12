@@ -1,3 +1,6 @@
 dist/
 node_modules/
 .DS_Store
+
+# local skottie preview player (regenerate: npx degit diffusionstudio/lottie lottie-player)
+lottie-player/

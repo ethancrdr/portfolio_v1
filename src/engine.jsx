@@ -1,6 +1,8 @@
 // engine.jsx — brush trail + scroll-reveal primitives
 import { useRef, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, useReducedMotion, useInView } from 'framer-motion';
+import lottie from 'lottie-web/build/player/lottie_light';
+import kanjiStrokes from './assets/kanji-lottie.json';
 
 /* ---------- Reveal — framer-motion whileInView ---------- */
 const REVEAL_VARIANTS = {
@@ -14,15 +16,24 @@ const REVEAL_VARIANTS = {
 
 function Reveal({ children, variant = "up", delay = 0, as = "div", className = "", style = {}, whileHover }) {
   const Tag = motion[as] ?? motion.div;
+  const reduce = useReducedMotion();
   const dur = parseFloat(
     getComputedStyle(document.documentElement).getPropertyValue("--reveal-dur")
   ) / 1000 || 0.9;
+
+  if (reduce) {
+    return (
+      <Tag className={className} style={style} whileHover={whileHover}>
+        {children}
+      </Tag>
+    );
+  }
 
   const builtVariants = {
     ...REVEAL_VARIANTS[variant],
     visible: {
       ...REVEAL_VARIANTS[variant].visible,
-      transition: { duration: dur, delay: delay / 1000, ease: [0.25, 0.1, 0.25, 1] },
+      transition: { duration: dur, delay: delay / 1000, ease: [0.16, 1, 0.3, 1] },
     },
   };
 
@@ -42,12 +53,57 @@ function Reveal({ children, variant = "up", delay = 0, as = "div", className = "
   );
 }
 
+/* ---------- CharReveal — per-character brush-stroke entrance ---------- */
+function CharReveal({ text, delay = 0, stagger = 34 }) {
+  const reduce = useReducedMotion();
+  if (reduce) return <span aria-hidden="true">{text}</span>;
+  let charIndex = 0;
+  return (
+    <span aria-hidden="true">
+      {text.split(" ").map((word, wi, words) => (
+        <span key={wi}>
+          <span style={{ display: "inline-block", whiteSpace: "nowrap" }}>
+          {Array.from(word).map((c, ci) => {
+            const i = charIndex++;
+            return (
+              <motion.span
+                key={ci}
+                style={{ display: "inline-block" }}
+                initial={{ opacity: 0, y: "0.42em", filter: "blur(7px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ duration: 0.72, delay: (delay + i * stagger) / 1000, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {c}
+              </motion.span>
+            );
+          })}
+          </span>
+          {wi < words.length - 1 ? " " : null}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/* ---------- ParallaxY — scroll-linked vertical drift (no listeners) ---------- */
+function ParallaxY({ children, from = 0, to = 60, className = "", style = {} }) {
+  const ref = useRef(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], [from, to]);
+  return (
+    <motion.div ref={ref} className={className} style={{ ...style, y: reduce ? 0 : y }}>
+      {children}
+    </motion.div>
+  );
+}
+
 /* ---------- VerticalText (tategaki) ---------- */
 function VerticalText({ children, className = "", style = {} }) {
   return (
     <span
       className={className}
-      style={{ writingMode: "vertical-rl", textOrientation: "upright", ...style, color: "rgb(40, 38, 37)", fontWeight: "600" }}>
+      style={{ writingMode: "vertical-rl", textOrientation: "upright", fontWeight: 600, ...style }}>
 
       {children}
     </span>);
@@ -70,6 +126,40 @@ function SealStamp({ glyph = "恵", size = 64, className = "", style = {} }) {
       <span style={{ writingMode: "vertical-rl", textOrientation: "upright", padding: "0px 0px 1px", margin: "0px 0px 1px" }}>{glyph}</span>
     </motion.span>
   );
+}
+
+/* ---------- KanjiBrush — Lottie stroke-order drawing of kanji glyphs ---------- */
+// playOn: "mount" plays after `delay` ms; "visible" waits until scrolled into view.
+function KanjiBrush({ label, data = kanjiStrokes, delay = 400, playOn = "mount", className = "", style = {} }) {
+  const ref = useRef(null);
+  const animRef = useRef(null);
+  const reduce = useReducedMotion();
+  const inView = useInView(ref, { once: true, margin: "-8% 0px" });
+
+  useEffect(() => {
+    const anim = lottie.loadAnimation({
+      container: ref.current,
+      renderer: 'svg',
+      loop: false,
+      autoplay: false,
+      // lottie-web mutates animationData; clone so words reused across rerenders stay pristine
+      animationData: structuredClone(data),
+      rendererSettings: { preserveAspectRatio: 'xMidYMid meet' },
+    });
+    animRef.current = anim;
+    if (reduce) anim.goToAndStop(anim.totalFrames - 1, true);
+    return () => { animRef.current = null; anim.destroy(); };
+  }, [reduce, data]);
+
+  useEffect(() => {
+    if (reduce || !animRef.current) return;
+    if (playOn === "mount" || inView) {
+      const timer = setTimeout(() => animRef.current?.play(), delay);
+      return () => clearTimeout(timer);
+    }
+  }, [reduce, playOn, inView, delay, data]);
+
+  return <div ref={ref} className={"kanji-brush " + className} style={style} role="img" aria-label={label} />;
 }
 
 /* ---------- BrushDivider — a tapering ink stroke ---------- */
@@ -104,27 +194,16 @@ function BrushDivider({ vertical = false, length = 120, className = "", style = 
   );
 }
 
-/* ---------- ScrollProgress — fills the mounting seam as you scroll ---------- */
+/* ---------- ScrollProgress — fills the mounting seam as the scroll unrolls ---------- */
 function ScrollProgress({ side = "left" }) {
-  const fill = useRef(null);
-  useEffect(() => {
-    let raf = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const h = document.documentElement.scrollHeight - window.innerHeight;
-        const p = h > 0 ? Math.min(1, window.scrollY / h) : 0;
-        if (fill.current) fill.current.style.transform = `scaleY(${p})`;
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const scaleY = useSpring(scrollYProgress, { stiffness: 140, damping: 28, mass: 0.4 });
+  if (reduce) return null;
   return (
     <div className={"scroll-seam scroll-seam--" + side} aria-hidden="true">
       <div className="scroll-seam__track" />
-      <div ref={fill} className="scroll-seam__fill" />
+      <motion.div className="scroll-seam__fill" style={{ scaleY }} />
     </div>);
 
 }
@@ -136,6 +215,9 @@ function SumiInkCursorTrail({ inkColor = "#1a1714" }) {
   inkRef.current = inkColor;
 
   useEffect(() => {
+    // skip on touch devices and for reduced-motion users
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     let marks = [];
@@ -265,4 +347,4 @@ function SumiInkCursorTrail({ inkColor = "#1a1714" }) {
   return <canvas ref={canvasRef} className="brush-canvas" aria-hidden="true" />;
 }
 
-export { SumiInkCursorTrail, Reveal, ScrollProgress, VerticalText, SealStamp, BrushDivider };
+export { SumiInkCursorTrail, Reveal, ScrollProgress, VerticalText, SealStamp, BrushDivider, CharReveal, ParallaxY, KanjiBrush };

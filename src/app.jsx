@@ -1,8 +1,9 @@
 // app.jsx — assembly, theme vars, language + tweaks
 import { useState as useState_, useEffect as useEffect_ } from 'react';
+import { useScroll, useMotionValueEvent } from 'framer-motion';
 import { PORTFOLIO } from './data';
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakColor, TweakSelect, TweakSlider } from './tweaks-panel';
-import { SumiInkCursorTrail, SealStamp, BrushDivider } from './engine';
+import { SumiInkCursorTrail, SealStamp, BrushDivider, ScrollProgress } from './engine';
 import { Hero, About, Stack, Work, Services, Contact, ProjectTimeline } from './sections';
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -20,13 +21,12 @@ const THEMES = {
 
 function TopBar({ P, t, lang, setLang }) {
   const [solid, setSolid] = useState_(false);
-  useEffect_(() => {
-    const onScroll = () => setSolid(window.scrollY > window.innerHeight * 0.7);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (v) => {
+    setSolid(v > window.innerHeight * 0.7);
+  });
   const items = [
-  ["about", t.nav.about], ["stack", t.nav.stack], ["work", t.nav.work],
+  ["work", t.nav.work], ["about", t.nav.about], ["stack", t.nav.stack],
   ["services", t.nav.services], ["contact", t.nav.contact]];
 
   return (
@@ -78,15 +78,16 @@ function App() {
   return (
     <div id="top" className="scroll-root">
       <SumiInkCursorTrail inkColor={theme.ink} />
+      <ScrollProgress side="left" />
       <TopBar P={P} t={t} lang={lang} setLang={setLang} />
 
       <div className="roller roller--top" aria-hidden="true"><i /><i /></div>
 
       <main className="paper">
         <Hero P={P} t={t} variant={tw.heroVariant} />
+        <Work t={t} />
         <About P={P} t={t} />
         <ProjectTimeline t={t} />
-        <Work t={t} />
         <Stack t={t} />
         <Services t={t} />
         <Contact P={P} t={t} />

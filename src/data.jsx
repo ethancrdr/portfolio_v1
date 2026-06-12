@@ -15,7 +15,7 @@ const PORTFOLIO = {
   es: {
     role: "Full Stack Developer",
     tagline: "Aplicaciones web, móviles e infraestructura cloud.",
-    scrollCue: "desliza para desplegar",
+    cta: { work: "Ver proyectos", contact: "Contacto" },
 
     nav: { about: "Sobre mí", stack: "Stack", work: "Proyectos", services: "Servicios", contact: "Contacto" },
 
@@ -78,7 +78,7 @@ const PORTFOLIO = {
           link: "https://openlocksecurity.com/", slot: "openlock",
         },
         {
-          num: "肆", name: "OpenLock — Landing",
+          num: "肆", name: "OpenLock Landing",
           tag: "Landing comercial",
           desc: "Landing page enfocada en captación de clientes y presentación comercial para OpenLock Security.",
           stack: ["Next.js", "Cloudflare", "SEO"],
@@ -120,16 +120,16 @@ const PORTFOLIO = {
     timelineKicker: "歴史",
     timelineTitle: "Cronología",
     timeline: [
-      { name: "Jaco Jungle Tours", tag: "Turismo · SEO", period: "Sep 2025 — Nov 2025", kanji: "旅", current: false },
-      { name: "CareConnect", tag: "Marketplace móvil · Salud", period: "Oct 2025 — Feb 2026", kanji: "医", current: false },
-      { name: "SafeLock · OpenLock Security", tag: "Seguridad · Infraestructura", period: "Ene 2026 — Actualidad", kanji: "守", current: true },
+      { name: "Jaco Jungle Tours", tag: "Turismo · SEO", period: "Sep 2025 - Nov 2025", kanji: "旅", current: false },
+      { name: "CareConnect", tag: "Marketplace móvil · Salud", period: "Oct 2025 - Feb 2026", kanji: "医", current: false },
+      { name: "SafeLock · OpenLock Security", tag: "Seguridad · Infraestructura", period: "Ene 2026 - Actualidad", kanji: "守", current: true },
     ],
   },
 
   en: {
     role: "Full Stack Developer",
     tagline: "Web, mobile & cloud infrastructure.",
-    scrollCue: "scroll to unroll",
+    cta: { work: "View work", contact: "Contact" },
 
     nav: { about: "About", stack: "Stack", work: "Work", services: "Services", contact: "Contact" },
 
@@ -192,7 +192,7 @@ const PORTFOLIO = {
           link: "https://openlocksecurity.com/", slot: "openlock",
         },
         {
-          num: "肆", name: "OpenLock — Landing",
+          num: "肆", name: "OpenLock Landing",
           tag: "Sales landing",
           desc: "Landing page focused on lead capture and commercial presentation for OpenLock Security.",
           stack: ["Next.js", "Cloudflare", "SEO"],
@@ -234,9 +234,9 @@ const PORTFOLIO = {
     timelineKicker: "歴史",
     timelineTitle: "Timeline",
     timeline: [
-      { name: "Jaco Jungle Tours", tag: "Tourism · SEO", period: "Sep 2025 — Nov 2025", kanji: "旅", current: false },
-      { name: "CareConnect", tag: "Mobile marketplace · Healthcare", period: "Oct 2025 — Feb 2026", kanji: "医", current: false },
-      { name: "SafeLock · OpenLock Security", tag: "Security · Infrastructure", period: "Jan 2026 — Present", kanji: "守", current: true },
+      { name: "Jaco Jungle Tours", tag: "Tourism · SEO", period: "Sep 2025 - Nov 2025", kanji: "旅", current: false },
+      { name: "CareConnect", tag: "Mobile marketplace · Healthcare", period: "Oct 2025 - Feb 2026", kanji: "医", current: false },
+      { name: "SafeLock · OpenLock Security", tag: "Security · Infrastructure", period: "Jan 2026 - Present", kanji: "守", current: true },
     ],
   },
 };
